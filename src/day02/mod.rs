@@ -1,9 +1,9 @@
 use super::common::Step;
 
-pub fn test_result(step: &Step) -> String {
+pub fn test_results(step: &Step) -> Vec<(&'static str, String)> {
     match step {
-        Step::First => 30.to_string(),
-        Step::Second => 0.to_string(),
+        Step::First => vec![("test_input.txt", 30.to_string())],
+        Step::Second => vec![],
     }
 }
 

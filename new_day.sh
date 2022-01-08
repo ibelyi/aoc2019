@@ -26,10 +26,10 @@ echo "pub mod $DAY;" >> $ROOT/src/lib.rs
 cat > src/$1/mod.rs <<TEMPLATE
 use super::common::Step;
 
-pub fn test_result(step: &Step) -> String {
+pub fn test_results(step: &Step) -> Vec<(&'static str, String)> {
     match step {
-	Step::First => 0.to_string(),
-	Step::Second => 0.to_string(),
+	Step::First => vec![("test_input.txt", 0.to_string())],
+	Step::Second => vec![("test_input.txt", 0.to_string())],
     }
 }
 
