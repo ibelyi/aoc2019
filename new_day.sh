@@ -28,8 +28,8 @@ use super::common::Step;
 
 pub fn test_results(step: &Step) -> Vec<(&'static str, String)> {
     match step {
-	Step::First => vec![("test_input.txt", 0.to_string())],
-	Step::Second => vec![("test_input.txt", 0.to_string())],
+        Step::First => vec![("test_input.txt", 0.to_string())],
+        Step::Second => vec![("test_input.txt", 0.to_string())],
     }
 }
 
@@ -38,9 +38,7 @@ fn count(_: &[&String]) -> i32 {
 }
 
 pub fn solution(step: &Step, input: &[String]) -> String {
-    let data:Vec<&String> = input
-        .iter()
-        .collect();
+    let data: Vec<&String> = input.iter().collect();
     match step {
         Step::First => count(&data).to_string(),
         Step::Second => count(&data).to_string(),
