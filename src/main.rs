@@ -1,8 +1,8 @@
 use aoc2019::{
     common::{lines_from_file, Step},
-    day05::{solution, test_results},
+    day06::{solution, test_results},
 };
-const DAY: &str = "day05";
+const DAY: &str = "day06";
 
 fn main() {
     let input = "./src/".to_string() + DAY + "/input.txt";
