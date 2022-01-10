@@ -10,7 +10,7 @@ pub fn test_results(step: &Step) -> Vec<(&'static str, String)> {
     }
 }
 
-fn next(curr: Vec<i32>) -> Option<Vec<i32>> {
+fn next(curr: Vec<i64>) -> Option<Vec<i64>> {
     for i in (1..curr.len()).rev() {
         if curr[i] > curr[i - 1] {
             let p = curr.split_at(i - 1);
@@ -29,7 +29,7 @@ fn next(curr: Vec<i32>) -> Option<Vec<i32>> {
     None
 }
 
-fn count_loopback(data: &[i32]) -> i32 {
+fn count_loopback(data: &[i64]) -> i64 {
     let mut max = 0;
     let mut choice = Some(vec![5, 6, 7, 8, 9]);
     while let Some(curr) = choice {
@@ -68,7 +68,7 @@ fn count_loopback(data: &[i32]) -> i32 {
     max
 }
 
-fn count(data: &[i32]) -> i32 {
+fn count(data: &[i64]) -> i64 {
     let mut max = 0;
     let mut choice = Some(vec![0, 1, 2, 3, 4]);
     while let Some(curr) = choice {
@@ -85,7 +85,7 @@ fn count(data: &[i32]) -> i32 {
 }
 
 pub fn solution(step: &Step, input: &[String]) -> String {
-    let data: Vec<i32> = input[0]
+    let data: Vec<i64> = input[0]
         .split(',')
         .map(|v| v.parse().expect("Not a number!"))
         .collect();

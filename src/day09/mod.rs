@@ -7,8 +7,8 @@ pub fn test_results(step: &Step) -> Vec<(&'static str, String)> {
     }
 }
 
-fn count(data: &[i64], id: i64) -> i64 {
-    intcode_run(&data, &[id])
+fn count(data: &[i64], input: i64) -> i64 {
+    intcode_run(&data, &[input])
 }
 
 pub fn solution(step: &Step, input: &[String]) -> String {
@@ -18,6 +18,6 @@ pub fn solution(step: &Step, input: &[String]) -> String {
         .collect();
     match step {
         Step::First => count(&data, 1).to_string(),
-        Step::Second => count(&data, 5).to_string(),
+        Step::Second => count(&data, 2).to_string(),
     }
 }

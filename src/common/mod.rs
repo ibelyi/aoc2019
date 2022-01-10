@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug)]
 pub enum Step {
     First,
@@ -16,28 +18,57 @@ pub fn lines_from_file(filename: impl AsRef<Path>) -> io::Result<Vec<String>> {
 
 #[derive(Clone)]
 pub struct Intcode {
-    opcode: Vec<i32>,
+    opcode: Vec<i64>,
     index: usize,
+    base: i64,
+    writes: HashMap<usize, i64>,
 }
 
 impl Intcode {
-    pub fn new(data: &[i32]) -> Intcode {
+    pub fn new(data: &[i64]) -> Intcode {
         Intcode {
             opcode: data.to_owned(),
             index: 0,
+            base: 0,
+            writes: HashMap::new(),
         }
     }
 
-    fn value(&self, offset: usize, modes: &[i32]) -> i32 {
-        let idx = if modes[offset] == 0 {
-            self.opcode[self.index + offset + 1] as usize
+    fn address(&self, offset: usize, modes: &[i64]) -> usize {
+        assert_ne!(modes[offset], 1);
+        (if modes[offset] == 0 {
+            self.opcode[self.index + offset + 1]
         } else {
-            self.index + offset + 1
-        };
-        self.opcode[idx]
+            assert_eq!(modes[offset], 2);
+            self.opcode[self.index + offset + 1] + self.base
+        }) as usize
     }
 
-    pub fn run(&mut self, input: &mut Option<i32>) -> Option<i32> {
+    fn write(&mut self, offset: usize, modes: &[i64], data: i64) {
+        let idx = self.address(offset, modes);
+        if idx < self.opcode.len() {
+            self.opcode[idx] = data;
+        } else {
+            self.writes.insert(idx, data);
+        };
+    }
+
+    fn read(&self, offset: usize, modes: &[i64]) -> i64 {
+        let idx = if modes[offset] == 1 {
+            self.index + offset + 1
+        } else {
+            self.address(offset, modes)
+        };
+        if idx < self.opcode.len() {
+            self.opcode[idx]
+        } else if let Some(v) = self.writes.get(&idx) {
+            *v
+        } else {
+            0
+        }
+    }
+
+    pub fn run(&mut self, input: &mut Option<i64>) -> Option<i64> {
         while self.index < self.opcode.len() {
             if self.opcode[self.index] == 99 {
                 self.index = self.opcode.len();
@@ -45,25 +76,48 @@ impl Intcode {
             }
             let opc = self.opcode[self.index] % 100;
             let mut m = self.opcode[self.index] / 10;
-            let modes: Vec<i32> = (0..3)
+            let modes: Vec<i64> = (0..3)
                 .map(move |_| {
                     m /= 10;
                     m % 10
                 })
                 .collect();
+            #[cfg(feature = "trace")]
+            {
+                let fields = if opc == 3 || opc == 4 || opc == 9 {
+                    2
+                } else if opc == 5 || opc == 6 {
+                    3
+                } else {
+                    4
+                };
+                println!(
+                    "[{}]> {}",
+                    self.index,
+                    self.opcode
+                        .iter()
+                        .skip(self.index)
+                        .take(fields)
+                        .map(|v| v.to_string())
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                );
+            }
             // Jumps
             if opc == 5 || opc == 6 {
-                if (self.value(0, &modes) == 0) == (opc == 6) {
-                    self.index = self.value(1, &modes) as usize;
+                if (self.read(0, &modes) == 0) == (opc == 6) {
+                    self.index = self.read(1, &modes) as usize;
                 } else {
                     self.index += 3;
                 }
+            // Base
+            } else if opc == 9 {
+                self.base += self.read(0, &modes);
+                self.index += 2;
             // Input
             } else if opc == 3 {
-                assert_eq!(modes[0], 0);
                 if let Some(inp) = input {
-                    let idx = self.opcode[self.index + 1] as usize;
-                    self.opcode[idx] = *inp;
+                    self.write(0, &modes, *inp);
                     self.index += 2;
                     *input = None;
                 } else {
@@ -71,33 +125,35 @@ impl Intcode {
                 }
             // Output
             } else if opc == 4 {
-                let output = Some(self.value(0, &modes));
+                let output = Some(self.read(0, &modes));
                 self.index += 2;
                 return output;
             } else {
-                assert_eq!(modes[2], 0);
-                let val1 = self.value(0, &modes);
-                let val2 = self.value(1, &modes);
-                let idx3 = self.opcode[self.index + 3] as usize;
-                self.opcode[idx3] = if opc == 1 {
-                    val1 + val2
-                } else if opc == 2 {
-                    val1 * val2
-                } else if opc == 7 {
-                    if val1 < val2 {
-                        1
+                let val1 = self.read(0, &modes);
+                let val2 = self.read(1, &modes);
+                self.write(
+                    2,
+                    &modes,
+                    if opc == 1 {
+                        val1 + val2
+                    } else if opc == 2 {
+                        val1 * val2
+                    } else if opc == 7 {
+                        if val1 < val2 {
+                            1
+                        } else {
+                            0
+                        }
+                    } else if opc == 8 {
+                        if val1 == val2 {
+                            1
+                        } else {
+                            0
+                        }
                     } else {
-                        0
-                    }
-                } else if opc == 8 {
-                    if val1 == val2 {
-                        1
-                    } else {
-                        0
-                    }
-                } else {
-                    panic!("Unknow opcode!")
-                };
+                        panic!("Unknow opcode!")
+                    },
+                );
                 self.index += 4;
             }
         }
@@ -109,25 +165,52 @@ impl Intcode {
     }
 }
 
-pub fn intcode_run(data: &[i32], input: &[i32]) -> i32 {
+/// Simple use of Intcode
+///
+/// # Example
+/// ```
+/// use aoc2019::common::intcode_run;
+/// let data = vec![109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99];
+/// let result = intcode_run(&data, &[]);
+/// assert_eq!(result, 99);
+/// let data = vec![1102,34915192,34915192,7,4,7,99,0];
+/// let result = intcode_run(&data, &[]);
+/// assert_eq!(result, 1219070632396864);
+/// let data = vec![104,1125899906842624,99];
+/// let result = intcode_run(&data, &[]);
+/// assert_eq!(result, 1125899906842624);
+/// let data = vec![109,2,209,-1,204,0,99];
+/// let result = intcode_run(&data, &[]);
+/// assert_eq!(result, 204);
+/// ```
+pub fn intcode_run(data: &[i64], input: &[i64]) -> i64 {
     let mut output = Vec::new();
     let mut intcode = Intcode::new(data);
-    let mut ii = 0;
+    let mut i = 0;
     let mut inp = None;
     loop {
         if let Some(val) = intcode.run(&mut inp) {
             output.push(val);
         } else if intcode.halted() {
             break;
-        } else if ii < input.len() {
-            inp = Some(input[ii]);
-            ii += 1;
+        } else if i < input.len() {
+            inp = Some(input[i]);
+            i += 1;
         } else {
             panic!("No input when one is expected!");
         }
     }
-    if ii < input.len() {
+    if i < input.len() {
         panic!("Not all input is used!");
     }
+    #[cfg(feature = "trace")]
+    println!(
+        "Output: {}",
+        output
+            .iter()
+            .map(|v| v.to_string())
+            .collect::<Vec<String>>()
+            .join(", ")
+    );
     output[output.len() - 1]
 }
