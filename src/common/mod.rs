@@ -25,6 +25,14 @@ pub struct Intcode {
 }
 
 impl Intcode {
+    pub fn parse(input: &str) -> Intcode {
+        let data: Vec<i64> = input
+            .split(',')
+            .map(|v| v.parse().expect("Not a number!"))
+            .collect();
+        Intcode::new(&data)
+    }
+
     pub fn new(data: &[i64]) -> Intcode {
         Intcode {
             opcode: data.to_owned(),
