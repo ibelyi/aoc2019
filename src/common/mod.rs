@@ -222,3 +222,15 @@ pub fn intcode_run(data: &[i64], input: &[i64]) -> i64 {
     );
     output[output.len() - 1]
 }
+
+pub fn gcd(a: u64, b: u64) -> u64 {
+    if a == 0 {
+        b
+    } else if b == 0 || a == b {
+        a
+    } else if a < b {
+        gcd(a, b % a)
+    } else {
+        gcd(b, a % b)
+    }
+}
