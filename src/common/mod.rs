@@ -42,6 +42,14 @@ impl Intcode {
         }
     }
 
+    pub fn set(&mut self, offset: usize, value: i64) {
+        if offset < self.opcode.len() {
+            self.opcode[offset] = value;
+        } else {
+            self.writes.insert(offset, value);
+        }
+    }
+
     fn address(&self, offset: usize, modes: &[i64]) -> usize {
         assert_ne!(modes[offset], 1);
         (if modes[offset] == 0 {

@@ -1,4 +1,5 @@
 use super::common::{gcd, Step};
+use std::cmp::Ordering;
 
 pub fn test_results(step: &Step) -> Vec<(&'static str, String)> {
     match step {
@@ -19,12 +20,16 @@ fn repeat(data: &[Vec<i32>]) -> u64 {
             loop {
                 for p1 in 0..ps.len() - 1 {
                     for p2 in p1 + 1..ps.len() {
-                        if ps[p1] < ps[p2] {
-                            vs[p1] += 1;
-                            vs[p2] -= 1;
-                        } else if ps[p1] > ps[p2] {
-                            vs[p1] -= 1;
-                            vs[p2] += 1;
+                        match ps[p1].cmp(&ps[p2]) {
+                            Ordering::Less => {
+                                vs[p1] += 1;
+                                vs[p2] -= 1;
+                            }
+                            Ordering::Greater => {
+                                vs[p1] -= 1;
+                                vs[p2] += 1;
+                            }
+                            Ordering::Equal => (),
                         }
                     }
                 }
@@ -47,12 +52,16 @@ fn count(data: &[Vec<i32>]) -> i32 {
         for p1 in 0..ps.len() - 1 {
             for p2 in p1..ps.len() {
                 for i in 0..ps[0].len() {
-                    if ps[p1][i] < ps[p2][i] {
-                        vs[p1][i] += 1;
-                        vs[p2][i] -= 1;
-                    } else if ps[p1][i] > ps[p2][i] {
-                        vs[p1][i] -= 1;
-                        vs[p2][i] += 1;
+                    match ps[p1][i].cmp(&ps[p2][i]) {
+                        Ordering::Less => {
+                            vs[p1][i] += 1;
+                            vs[p2][i] -= 1;
+                        }
+                        Ordering::Greater => {
+                            vs[p1][i] -= 1;
+                            vs[p2][i] += 1;
+                        }
+                        Ordering::Equal => (),
                     }
                 }
             }
@@ -85,7 +94,7 @@ pub fn solution(step: &Step, input: &[String]) -> String {
             s.as_str()
                 .split(", ")
                 .map(|c| {
-                    c.split("=")
+                    c.split('=')
                         .nth(1)
                         .expect("Missing value!")
                         .parse()
